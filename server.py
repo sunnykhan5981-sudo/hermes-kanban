@@ -21,9 +21,14 @@ KANBAN_BOARD = os.environ.get("HERMES_KANBAN_BOARD", "/data/hermes-kanban")
 def run_hermes(args):
     try:
         # Use the mounted disk for kanban database on Render
-        kanban_board = os.environ.get("HERMES_KANBAN_BOARD", KANBAN_BOARD)
-        cmd = ["hermes", "--board", kanban_board] + args
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        # Set environment variables for hermes CLI
+        env = os.environ.copy()
+        env["HERMES_KANBAN_BOARD"] = os.environ.get("HERMES_KANBAN_BOARD", "/data/hermes-kanban")
+        env["XDG_CONFIG_HOME"] = "/data/hermes"
+        env["XDG_DATA_HOME"] = "/data/hermes"
+        
+        cmd = ["hermes"] + args
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=env)
         return result.stdout.strip(), result.stderr.strip(), result.returncode
     except subprocess.TimeoutExpired:
         return "", "Command timeout", 1
@@ -96,11 +101,11 @@ const STATIC_ASSETS = ['/', '/manifest.json', '/api/tasks', '/api/stats', '/api/
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
-});
+}
 
 self.addEventListener('activate', event => {
     event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
-});
+}
 
 self.addEventListener('fetch', event => {
     const { request } = event;
@@ -111,7 +116,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; })));
-});
+}
 
 self.addEventListener('sync', event => { if (event.tag === 'sync-tasks') event.waitUntil(syncTasks()); });
 async function syncTasks() { const cache = await caches.open('offline-tasks'); const requests = await cache.keys(); for (const request of requests) { try { await fetch(request); await cache.delete(request); } catch (e) {} } }
@@ -120,10 +125,13 @@ self.addEventListener('notificationclick', event => { event.notification.close()
 
 def run_hermes(args):
     try:
-        # Use the mounted disk for kanban database on Render
-        kanban_board = os.environ.get("HERMES_KANBAN_BOARD", KANBAN_BOARD)
-        cmd = ["hermes", "--board", kanban_board] + args
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        env = os.environ.copy()
+        env["HERMES_KANBAN_BOARD"] = "/data/hermes-kanban"
+        env["XDG_CONFIG_HOME"] = "/data/hermes"
+        env["XDG_DATA_HOME"] = "/data/hermes"
+        
+        cmd = ["hermes"] + args
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=env)
         return result.stdout.strip(), result.stderr.strip(), result.returncode
     except subprocess.TimeoutExpired:
         return "", "Command timeout", 1
@@ -239,7 +247,6 @@ def health():
 
 if __name__ == '__main__':
     os.makedirs(STATIC_FOLDER, exist_ok=True)
-    # Use PORT from environment (Render sets this to 10000)
     port = int(os.environ.get("PORT", 9121))
     print(f"Starting Kanban Dashboard on http://0.0.0.0:{port}")
     print("Press Ctrl+C to stop")

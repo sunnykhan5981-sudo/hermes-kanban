@@ -5,12 +5,14 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       pip install hermes-agent
-    startCommand: "sh -c 'gunicorn server:app --bind 0.0.0.0:$PORT'"
+    startCommand: "gunicorn server:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
       - key: HERMES_CMD
         value: "hermes"
+      - key: HERMES_KANBAN_BOARD
+        value: "/data/hermes-kanban"
       - key: XDG_CONFIG_HOME
         value: "/data/hermes"
       - key: XDG_DATA_HOME
