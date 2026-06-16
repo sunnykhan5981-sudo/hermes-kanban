@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""
+Hermes Kanban Dashboard - Backend API
+Runs locally, wraps `hermes kanban` CLI commands as REST API
+"""
+import subprocess
+import json
+import os
+from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+STATIC_FOLDER = os.path.join(os.path.dirname(__file__), 'static')
+HERMES_CMD = "hermes"
+
+# Kanban board path for Render persistent disk
+KANBAN_BOARD = os.environ.get("HERMES_KANBAN_BOARD", "/data/hermes-kanban")
+
+def run_hermes(args):
+    try:
+        # Use the mounted disk for kanban database on Render
+        kanban_board = os.environ.get("HERMES_KANBAN_BOARD", KANBAN_BOARD)
+        cmd = ["hermes", "--board", kanban_board] + args
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        return result.stdout.strip(), result.stderr.strip(), result.returncode
+    except subprocess.TimeoutExpired:
+        return "", "Command timeout", 1
+    except Exception as e:
+        return "", str(e), 1
+
+def parse_tasks(output):
+    tasks = []
+    lines = output.strip().split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('SLUG') or 'Current board' in line:
+            continue
+        parts = line.split()
+        if len(parts) >= 4:
+            status_icon = parts[0]
+            task_id = parts[1]
+            status = parts[2]
+            assignee = parts[3]
+            title = ' '.join(parts[4:]) if len(parts) > 4 else ''
+            tasks.append({
+                'id': task_id,
+                'status': status,
+                'assignee': assignee,
+                'title': title,
+                'completed': status_icon == '✓'
+            })
+    return tasks
+
+def parse_show(output):
+    data = {'events': [], 'runs': []}
+    lines = output.strip().split('\n')
+    current_section = None
+    for line in lines:
+        line = line.strip()
+        if 'Events' in line:
+            current_section = 'events'
+            continue
+        elif 'Runs' in line:
+            current_section = 'runs'
+            continue
+        if current_section == 'events' and line and line.startswith('['):
+            data['events'].append(line)
+        elif current_section == 'runs' and line and line.startswith('#'):
+            data['runs'].append(line)
+    return data
+
+# Embedded PWA files
+MANIFEST = {
+    "name": "Hermes Kanban",
+    "short_name": "Hermes",
+    "description": "Multi-Agent Kanban Dashboard for Hermes AI",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "scope": "/",
+    "icons": [{
+        "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a1a2e' width='100' height='100' rx='22'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='50'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E",
+        "sizes": "any",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+    }],
+    "categories": ["productivity", "business"]
+}
+
+SW_JS = """const CACHE_NAME = 'hermes-kanban-v1';
+const STATIC_ASSETS = ['/', '/manifest.json', '/api/tasks', '/api/stats', '/api/assignees'];
+
+self.addEventListener('install', event => {
+    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', event => {
+    const { request } = event;
+    const url = new URL(request.url);
+    if (request.method !== 'GET') return;
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; }).catch(() => caches.match(request)));
+        return;
+    }
+    event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; })));
+});
+
+self.addEventListener('sync', event => { if (event.tag === 'sync-tasks') event.waitUntil(syncTasks()); });
+async function syncTasks() { const cache = await caches.open('offline-tasks'); const requests = await cache.keys(); for (const request of requests) { try { await fetch(request); await cache.delete(request); } catch (e) {} } }
+self.addEventListener('push', event => { if (!event.data) return; const data = event.data.json(); const options = { body: data.body, icon: '/static/icon-192.png', badge: '/static/badge-72.png', vibrate: [200, 100, 200], data: data.url || '/', actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }] }; event.waitUntil(self.registration.showNotification(data.title, options)); });
+self.addEventListener('notificationclick', event => { event.notification.close(); if (event.action === 'open' || !event.action) { event.waitUntil(clients.matchAll({ type: 'window' }).then(clientList => { for (const client of clientList) { if (client.url === event.notification.data && 'focus' in client) return client.focus(); } return clients.openWindow(event.notification.data || '/'); })); });"""
+
+from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+STATIC_FOLDER = os.path.join(os.path.dirname(__file__), 'static')
+HERMES_CMD = "hermes"
+
+# PWA Routes - inline responses
+@app.route('/manifest.json')
+def manifest():
+    return jsonify({
+        "name": "Hermes Kanban",
+        "short_name": "Hermes",
+        "description": "Multi-Agent Kanban Dashboard for Hermes AI",
+        "start_url": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "background_color": "#000000",
+        "theme_color": "#000000",
+        "scope": "/",
+        "icons": [{
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a1a2e' width='100' height='100' rx='22'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='50'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }],
+        "categories": ["productivity", "business"]
+    })
+
+@app.route('/sw.js')
+def service_worker():
+    return """const CACHE_NAME = 'hermes-kanban-v1';
+const STATIC_ASSETS = ['/', '/manifest.json', '/api/tasks', '/api/stats', '/api/assignees'];
+
+self.addEventListener('install', event => {
+    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', event => {
+    const { request } = event;
+    const url = new URL(request.url);
+    if (request.method !== 'GET') return;
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; }).catch(() => caches.match(request)));
+        return;
+    }
+    event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; })));
+});
+
+self.addEventListener('sync', event => { if (event.tag === 'sync-tasks') event.waitUntil(syncTasks()); });
+async function syncTasks() { const cache = await caches.open('offline-tasks'); const requests = await cache.keys(); for (const request of requests) { try { await fetch(request); await cache.delete(request); } catch (e) {} } }
+self.addEventListener('push', event => { if (!event.data) return; const data = event.data.json(); const options = { body: data.body, icon: '/static/icon-192.png', badge: '/static/badge-72.png', vibrate: [200, 100, 200], data: data.url || '/', actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }] }; event.waitUntil(self.registration.showNotification(data.title, options)); });
+self.addEventListener('notificationclick', event => { event.notification.close(); if (event.action === 'open' || !event.action) { event.waitUntil(clients.matchAll({ type: 'window' }).then(clientList => { for (const client of clientList) { if (client.url === event.notification.data && 'focus' in client) return client.focus(); } return clients.openWindow(event.notification.data || '/'); })); });""", 200, {'Content-Type': 'application/javascript'}
+
+def run_hermes(args):
+    try:
+        # Use the mounted disk for kanban database on Render
+        kanban_board = os.environ.get("HERMES_KANBAN_BOARD", KANBAN_BOARD)
+        cmd = ["hermes", "--board", kanban_board] + args
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        return result.stdout.strip(), result.stderr.strip(), result.returncode
+    except subprocess.TimeoutExpired:
+        return "", "Command timeout", 1
+    except Exception as e:
+        return "", str(e), 1
+
+def parse_tasks(output):
+    tasks = []
+    lines = output.strip().split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('SLUG') or 'Current board' in line:
+            continue
+        parts = line.split()
+        if len(parts) >= 4:
+            status_icon = parts[0]
+            task_id = parts[1]
+            status = parts[2]
+            assignee = parts[3]
+            title = ' '.join(parts[4:]) if len(parts) > 4 else ''
+            tasks.append({
+                'id': task_id,
+                'status': status,
+                'assignee': assignee,
+                'title': title,
+                'completed': status_icon == '✓'
+            })
+    return tasks
+
+def parse_show(output):
+    data = {'events': [], 'runs': []}
+    lines = output.strip().split('\n')
+    current_section = None
+    for line in lines:
+        line = line.strip()
+        if 'Events' in line:
+            current_section = 'events'
+            continue
+        elif 'Runs' in line:
+            current_section = 'runs'
+            continue
+        if current_section == 'events' and line and line.startswith('['):
+            data['events'].append(line)
+        elif current_section == 'runs' and line and line.startswith('#'):
+            data['runs'].append(line)
+    return data
+
+# Main routes
+@app.route('/')
+def index():
+    return send_from_directory(STATIC_FOLDER, 'index.html')
+
+@app.route('/api/tasks')
+def get_tasks():
+    stdout, stderr, code = run_hermes(['kanban', 'list'])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    tasks = parse_tasks(stdout)
+    return jsonify({'tasks': tasks})
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    data = request.get_json()
+    title = data.get('title', '')
+    assignee = data.get('assignee', 'researcher')
+    if not title:
+        return jsonify({'error': 'Title required'}), 400
+    stdout, stderr, code = run_hermes(['kanban', 'create', title, '--assignee', assignee])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'success': True, 'output': stdout})
+
+@app.route('/api/tasks/<task_id>')
+def get_task(task_id):
+    stdout, stderr, code = run_hermes(['kanban', 'show', task_id])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'detail': stdout, 'parsed': parse_show(stdout)})
+
+@app.route('/api/tasks/<task_id>/complete', methods=['POST'])
+def complete_task(task_id):
+    data = request.get_json()
+    summary = data.get('summary', 'Completed via dashboard')
+    stdout, stderr, code = run_hermes(['kanban', 'complete', task_id, '--summary', summary])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'success': True, 'output': stdout})
+
+@app.route('/api/assignees')
+def get_assignees():
+    stdout, stderr, code = run_hermes(['kanban', 'assignees'])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'output': stdout})
+
+@app.route('/api/stats')
+def get_stats():
+    stdout, stderr, code = run_hermes(['kanban', 'stats'])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'output': stdout})
+
+@app.route('/api/boards')
+def get_boards():
+    stdout, stderr, code = run_hermes(['kanban', 'boards', 'list'])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'output': stdout})
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'service': 'hermes-kanban-dashboard'})
+
+if __name__ == '__main__':
+    os.makedirs(STATIC_FOLDER, exist_ok=True)
+    # Use PORT from environment (Render sets this to 10000)
+    port = int(os.environ.get("PORT", 9121))
+    print(f"Starting Kanban Dashboard on http://0.0.0.0:{port}")
+    print("Press Ctrl+C to stop")
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

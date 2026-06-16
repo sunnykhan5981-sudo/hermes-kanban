@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: hermes-kanban
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python server.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: HERMES_CMD
+        value: "hermes"
+      - key: XDG_CONFIG_HOME
+        value: "/data/hermes"
+      - key: XDG_DATA_HOME
+        value: "/data/hermes"
+    disk:
+      name: kanban-data
+      mountPath: /data
+      sizeGB: 1
