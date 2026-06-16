@@ -5,7 +5,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       pip install hermes-agent
-    startCommand: "gunicorn server:app --bind 0.0.0.0:$PORT"
+    startCommand: "sh -c 'gunicorn server:app --bind 0.0.0.0:$PORT'"
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
