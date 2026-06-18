@@ -262,6 +262,57 @@ def get_boards():
 def health():
     return jsonify({'status': 'ok', 'service': 'hermes-kanban-dashboard'})
 
+# PWA Routes - Must be at root path for PWA registration
+@app.route('/manifest.json')
+def manifest():
+    return jsonify({
+        "name": "Hermes Kanban",
+        "short_name": "Hermes",
+        "description": "Multi-Agent Kanban Dashboard for Hermes AI",
+        "start_url": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "background_color": "#000000",
+        "theme_color": "#000000",
+        "scope": "/",
+        "icons": [{
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a1a2e' width='100' height='100' rx='22'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='50'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }],
+        "categories": ["productivity", "business"]
+    })
+
+@app.route('/sw.js')
+def service_worker():
+    return """const CACHE_NAME = 'hermes-kanban-v1';
+const STATIC_ASSETS = ['/', '/manifest.json', '/api/tasks', '/api/stats', '/api/assignees'];
+
+self.addEventListener('install', event => {
+    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', event => {
+    const { request } = event;
+    const url = new URL(request.url);
+    if (request.method !== 'GET') return;
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; }).catch(() => caches.match(request)));
+        return;
+    }
+    event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => { if (response.ok) { const cloned = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, cloned)); } return response; })));
+});
+
+self.addEventListener('sync', event => { if (event.tag === 'sync-tasks') event.waitUntil(syncTasks()); });
+async function syncTasks() { const cache = await caches.open('offline-tasks'); const requests = await cache.keys(); for (const request of requests) { try { await fetch(request); await cache.delete(request); } catch (e) {} } }
+self.addEventListener('push', event => { if (!event.data) return; const data = event.data.json(); const options = { body: data.body, icon: '/static/icon-192.png', badge: '/static/badge-72.png', vibrate: [200, 100, 200], data: data.url || '/', actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }] }; event.waitUntil(self.registration.showNotification(data.title, options)); });
+self.addEventListener('notificationclick', event => { event.notification.close(); if (event.action === 'open' || !event.action) { event.waitUntil(clients.matchAll({ type: 'window' }).then(clientList => { for (const client of clientList) { if (client.url === event.notification.data && 'focus' in client) return client.focus(); } return clients.openWindow(event.notification.data || '/'); })); } });""", 200, {'Content-Type': 'application/javascript'}
+
 if __name__ == '__main__':
     os.makedirs(STATIC_FOLDER, exist_ok=True)
     # Start background dispatcher
