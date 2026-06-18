@@ -6,6 +6,8 @@ Runs locally, wraps `hermes kanban` CLI commands as REST API
 import subprocess
 import json
 import os
+import threading
+import time
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 
@@ -17,6 +19,11 @@ HERMES_CMD = "hermes"
 
 # Kanban board path for Render persistent disk
 KANBAN_BOARD = os.environ.get("HERMES_KANBAN_BOARD", "/data/hermes-kanban")
+
+# Background dispatcher control
+dispatcher_thread = None
+dispatcher_running = False
+dispatcher_interval = int(os.environ.get("DISPATCHER_INTERVAL", "30"))  # seconds
 
 def run_hermes(args):
     try:
@@ -34,6 +41,56 @@ def run_hermes(args):
         return "", "Command timeout", 1
     except Exception as e:
         return "", str(e), 1
+
+def run_kanban_dispatch():
+    """Run a single kanban dispatch cycle"""
+    try:
+        stdout, stderr, code = run_hermes(['kanban', 'dispatch'])
+        if code != 0 and stderr:
+            print(f"Dispatcher warning: {stderr}")
+        return code == 0
+    except Exception as e:
+        print(f"Dispatcher error: {e}")
+        return False
+
+def dispatcher_loop():
+    """Background loop that runs kanban dispatch periodically"""
+    global dispatcher_running
+    print(f"[Dispatcher] Starting background dispatcher (interval: {dispatcher_interval}s)")
+    dispatcher_running = True
+    
+    while dispatcher_running:
+        try:
+            print("[Dispatcher] Running kanban dispatch...")
+            run_kanban_dispatch()
+        except Exception as e:
+            print(f"[Dispatcher] Error: {e}")
+        
+        # Sleep with early exit check
+        for _ in range(dispatcher_interval):
+            if not dispatcher_running:
+                break
+            time.sleep(1)
+    
+    print("[Dispatcher] Stopped")
+
+def start_dispatcher():
+    global dispatcher_thread, dispatcher_running
+    if dispatcher_thread is not None and dispatcher_thread.is_alive():
+        print("[Dispatcher] Already running")
+        return
+    
+    dispatcher_running = True
+    dispatcher_thread = threading.Thread(target=dispatcher_loop, daemon=True)
+    dispatcher_thread.start()
+    print("[Dispatcher] Background dispatcher started")
+
+def stop_dispatcher():
+    global dispatcher_running, dispatcher_thread
+    dispatcher_running = False
+    if dispatcher_thread is not None:
+        dispatcher_thread.join(timeout=5)
+    print("[Dispatcher] Background dispatcher stopped")
 
 def parse_tasks(output):
     tasks = []
@@ -121,63 +178,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('sync', event => { if (event.tag === 'sync-tasks') event.waitUntil(syncTasks()); });
 async function syncTasks() { const cache = await caches.open('offline-tasks'); const requests = await cache.keys(); for (const request of requests) { try { await fetch(request); await cache.delete(request); } catch (e) {} } }
 self.addEventListener('push', event => { if (!event.data) return; const data = event.data.json(); const options = { body: data.body, icon: '/static/icon-192.png', badge: '/static/badge-72.png', vibrate: [200, 100, 200], data: data.url || '/', actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }] }; event.waitUntil(self.registration.showNotification(data.title, options)); });
-self.addEventListener('notificationclick', event => { event.notification.close(); if (event.action === 'open' || !event.action) { event.waitUntil(clients.matchAll({ type: 'window' }).then(clientList => { for (const client of clientList) { if (client.url === event.notification.data && 'focus' in client) return client.focus(); } return clients.openWindow(event.notification.data || '/'); })); });"""
-
-def run_hermes(args):
-    try:
-        env = os.environ.copy()
-        env["HERMES_KANBAN_BOARD"] = "/data/hermes-kanban"
-        env["XDG_CONFIG_HOME"] = "/data/hermes"
-        env["XDG_DATA_HOME"] = "/data/hermes"
-        
-        cmd = ["hermes"] + args
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=env)
-        return result.stdout.strip(), result.stderr.strip(), result.returncode
-    except subprocess.TimeoutExpired:
-        return "", "Command timeout", 1
-    except Exception as e:
-        return "", str(e), 1
-
-def parse_tasks(output):
-    tasks = []
-    lines = output.strip().split('\n')
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith('SLUG') or 'Current board' in line:
-            continue
-        parts = line.split()
-        if len(parts) >= 4:
-            status_icon = parts[0]
-            task_id = parts[1]
-            status = parts[2]
-            assignee = parts[3]
-            title = ' '.join(parts[4:]) if len(parts) > 4 else ''
-            tasks.append({
-                'id': task_id,
-                'status': status,
-                'assignee': assignee,
-                'title': title,
-                'completed': status_icon == '✓'
-            })
-    return tasks
-
-def parse_show(output):
-    data = {'events': [], 'runs': []}
-    lines = output.strip().split('\n')
-    current_section = None
-    for line in lines:
-        line = line.strip()
-        if 'Events' in line:
-            current_section = 'events'
-            continue
-        elif 'Runs' in line:
-            current_section = 'runs'
-            continue
-        if current_section == 'events' and line and line.startswith('['):
-            data['events'].append(line)
-        elif current_section == 'runs' and line and line.startswith('#'):
-            data['runs'].append(line)
-    return data
+self.addEventListener('notificationclick', event => { event.notification.close(); if (event.action === 'open' || !event.action) { event.waitUntil(clients.matchAll({ type: 'window' }).then(clientList => { for (const client of clientList) { if (client.url === event.notification.data && 'focus' in client) return client.focus(); } return clients.openWindow(event.notification.data || '/'); })); } });"""
 
 # Main routes
 @app.route('/')
@@ -202,6 +203,8 @@ def create_task():
     stdout, stderr, code = run_hermes(['kanban', 'create', title, '--assignee', assignee])
     if code != 0:
         return jsonify({'error': stderr}), 500
+    # Trigger immediate dispatch after task creation
+    run_kanban_dispatch()
     return jsonify({'success': True, 'output': stdout})
 
 @app.route('/api/tasks/<task_id>')
@@ -247,7 +250,13 @@ def health():
 
 if __name__ == '__main__':
     os.makedirs(STATIC_FOLDER, exist_ok=True)
+    # Start background dispatcher
+    start_dispatcher()
+    # Use PORT from environment (Render sets this to 10000)
     port = int(os.environ.get("PORT", 9121))
     print(f"Starting Kanban Dashboard on http://0.0.0.0:{port}")
     print("Press Ctrl+C to stop")
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    finally:
+        stop_dispatcher()
