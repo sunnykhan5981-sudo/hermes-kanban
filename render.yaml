@@ -20,4 +20,4 @@ services:
     disk:
       name: kanban-data
       mountPath: /data
-      sizeGB: 1
+      sizeGB: 1# triggered rebuild 19 Jun 2026 19:31:55
