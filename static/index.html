@@ -1056,7 +1056,6 @@ window.addEventListener('online', () => { isOnline = true; refreshAll(); });
 window.addEventListener('offline', () => { isOnline = false; setConnectionStatus(false, 'Offline'); });
 
 // Touch Gestures for Modal (swipe down to close)
-let touchStartY = 0;
 document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
     modal.addEventListener('touchmove', e => {
