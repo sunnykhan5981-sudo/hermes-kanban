@@ -1,0 +1,16 @@
+{
+  "id": "REM-20260618-002",
+  "timestamp": "2026-06-18T18:18:00+06:00",
+  "incident_id": "INC-20260618-002",
+  "type": "task_stuck",
+  "failure_classification": "crash",
+  "agent": "project-l-dev",
+  "task": "t_be0ad849",
+  "detection": "Run 26 active since 18:08 but no new deliverable files created; voiceChatServer.js truncated (31KB→15KB); missing integration.test.js and Dockerfile",
+  "action_taken": "Injected corrective guidance via GUID-20260618-001.json",
+  "outcome": "guidance_injected",
+  "stuck_phase": "stuck_initial",
+  "next_action": "If no progress in 5 min, re-queue task as new with guidance prepended (fresh context). Archive current task first.",
+  "retry_count": 0,
+  "escalated": false
+}

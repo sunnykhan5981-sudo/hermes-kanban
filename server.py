@@ -325,3 +325,156 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     finally:
         stop_dispatcher()
+# Enhanced parsing functions
+def parse_show(output):
+    data = {'events': [], 'runs': [], 'artifacts': [], 'gates': {}, 'description': '', 'dependencies': [], 'pipeline_mode': 'feature', 'priority': 'medium'}
+    lines = output.strip().split('\n')
+    current_section = None
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if 'Events' in line:
+            current_section = 'events'
+            continue
+        elif 'Runs' in line:
+            current_section = 'runs'
+            continue
+        elif 'Artifacts' in line:
+            current_section = 'artifacts'
+            continue
+        elif 'Gates' in line or 'Quality Gates' in line:
+            current_section = 'gates'
+            continue
+        elif 'Description' in line or 'Context' in line:
+            current_section = 'description'
+            continue
+        elif 'Dependencies' in line:
+            current_section = 'dependencies'
+            continue
+        elif 'Pipeline Mode' in line:
+            current_section = 'pipeline_mode'
+            continue
+        elif 'Priority' in line:
+            current_section = 'priority'
+            continue
+        if current_section == 'events' and line.startswith('['):
+            data['events'].append(line)
+        elif current_section == 'runs' and line.startswith('#'):
+            data['runs'].append(line)
+        elif current_section == 'artifacts' and line:
+            data['artifacts'].append({'raw': line})
+        elif current_section == 'gates' and ':' in line:
+            parts = line.split(':', 1)
+            if len(parts) == 2:
+                data['gates'][parts[0].strip()] = parts[1].strip()
+        elif current_section == 'description' and line:
+            data['description'] = line
+        elif current_section == 'dependencies' and line:
+            data['dependencies'] = [d.strip() for d in line.split(',')]
+        elif current_section == 'pipeline_mode' and line:
+            data['pipeline_mode'] = line.lower()
+        elif current_section == 'priority' and line:
+            data['priority'] = line.lower()
+    return data
+
+
+@app.route('/api/tasks/<task_id>/move', methods=['POST'])
+def move_task(task_id):
+    data = request.get_json()
+    new_status = data.get('status', '')
+    if not new_status:
+        return jsonify({'error': 'Status required'}), 400
+    
+    # Map new column statuses to hermes kanban statuses
+    status_map = {
+        'ideas': 'triage',
+        'research': 'todo',
+        'planning': 'ready',
+        'dev': 'running',
+        'testing': 'blocked',  # testing uses blocked as intermediate
+        'marketing': 'running',
+        'ready': 'ready',
+        'done': 'done'
+    }
+    hermes_status = status_map.get(new_status, new_status)
+    
+    stdout, stderr, code = run_hermes(['kanban', 'move', task_id, '--to', hermes_status])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    run_kanban_dispatch()
+    return jsonify({'success': True, 'output': stdout, 'new_status': new_status})
+
+
+@app.route('/api/tasks/<task_id>/assign', methods=['POST'])
+def assign_task(task_id):
+    data = request.get_json()
+    assignee = data.get('assignee', '')
+    if not assignee:
+        return jsonify({'error': 'Assignee required'}), 400
+    
+    # Map agent keys to hermes profiles
+    assignee_map = {
+        'researcher': 'researcher',
+        'planning': 'default',
+        'coder': 'coder',
+        'testing': 'reviewer',
+        'default': 'default',
+        'marketing-research': 'researcher',
+        'marketing-script': 'researcher',
+        'marketing-image': 'researcher',
+        'marketing-video': 'researcher',
+        'marketing-campaign': 'default',
+        'marketing-qc': 'reviewer',
+        'marketing-outreach': 'default',
+        'support': 'default',
+        'supervisor': 'default'
+    }
+    hermes_assignee = assignee_map.get(assignee, assignee)
+    
+    stdout, stderr, code = run_hermes(['kanban', 'assign', task_id, hermes_assignee])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'success': True, 'output': stdout})
+
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    data = request.get_json()
+    title = data.get('title', '')
+    assignee = data.get('assignee', 'researcher')
+    priority = data.get('priority', 'medium')
+    pipeline_mode = data.get('pipelineMode', 'feature')
+    dependencies = data.get('dependencies', [])
+    description = data.get('description', '')
+    
+    if not title:
+        return jsonify({'error': 'Title required'}), 400
+    
+    # Build context with all metadata
+    context_parts = [title]
+    if description:
+        context_parts.append(f"Description: {description}")
+    if priority != 'medium':
+        context_parts.append(f"Priority: {priority}")
+    if pipeline_mode != 'feature':
+        context_parts.append(f"Pipeline: {pipeline_mode}")
+    if dependencies:
+        context_parts.append(f"Depends on: {', '.join(dependencies)}")
+    
+    full_title = ' | '.join(context_parts)
+    
+    stdout, stderr, code = run_hermes(['kanban', 'create', full_title, '--assignee', assignee])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    run_kanban_dispatch()
+    return jsonify({'success': True, 'output': stdout})
+
+
+@app.route('/api/tasks/<task_id>/detail')
+def get_task_detail(task_id):
+    stdout, stderr, code = run_hermes(['kanban', 'show', task_id])
+    if code != 0:
+        return jsonify({'error': stderr}), 500
+    return jsonify({'detail': stdout, 'parsed': parse_show(stdout)})
+

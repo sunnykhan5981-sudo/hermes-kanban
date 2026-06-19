@@ -1,0 +1,12 @@
+{
+  "id": "GUID-20260618-001",
+  "timestamp": "2026-06-18T18:18:00+06:00",
+  "agent": "project-l-dev",
+  "task": "t_be0ad849",
+  "injection_type": "drift_correction",
+  "severity": "high",
+  "pattern_detected": "Agent stuck modifying existing files instead of creating missing deliverables. voiceChatServer.js regressed (31KB→15KB). No integration.test.js or Dockerfile created after 10+ min of run 26.",
+  "corrective_prompt": "CRITICAL: STOP modifying existing files. You have already lost the original voiceChatServer.js content (truncated from 31KB to 15KB). \n\nIMMEDIATELY create ONLY these two missing files:\n1. tests/integration.test.js — Full integration test using supertest + ws: connect → join room → relay audio → leave. Test WS upgrade, room creation, user join/leave, binary message relay, cleanup on disconnect.\n2. Dockerfile — Multi-stage build FROM node:20-alpine, COPY . , RUN npm ci --production, EXPOSE 3000, HEALTHCHECK --interval=30s CMD wget -qO- http://localhost:3000/health || exit 1, CMD [\"npm\",\"start\"]\n\nThen run: npm test\n\nDO NOT touch src/voiceChatServer.js, src/store.js, src/roomManager.js, or src/index.js. Only create the two new files.",
+  "applied": true,
+  "applied_to": "t_be0ad849 run 26 (via task context injection on next claim)"
+}

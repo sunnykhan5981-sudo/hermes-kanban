@@ -1,0 +1,23 @@
+{
+  "id": "REM-20260618-001",
+  "timestamp": "2026-06-18T18:18:00+06:00",
+  "incident_id": "INC-20260618-001",
+  "type": "gateway_down",
+  "failure_classification": "config",
+  "agents_affected": ["coder", "researcher", "planning", "reviewer", "marketing", "growth", "orchestrator", "support"],
+  "detection": "hermes profile list showed 8/9 gateways stopped",
+  "action_taken": "Executed hermes -p <profile> gateway start for all 8 stopped profiles",
+  "outcome": "success",
+  "details": {
+    "coder": "Scheduled Task Hermes_Gateway_coder started (PID 20292)",
+    "researcher": "Scheduled Task Hermes_Gateway_researcher started (PID 8552)",
+    "planning": "Direct spawn (PID 19332)",
+    "reviewer": "Scheduled Task Hermes_Gateway_reviewer started (PID 18544)",
+    "marketing": "Direct spawn (PID 5724)",
+    "growth": "Direct spawn (PID 18056)",
+    "orchestrator": "Direct spawn (PID 2176)",
+    "support": "Direct spawn (PID 14036)"
+  },
+  "retry_count": 0,
+  "escalated": false
+}

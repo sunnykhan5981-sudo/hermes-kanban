@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-06-18T18:18:00+06:00",
+  "supervisor_cycle": "2026-06-18T18:18",
+  "gateways": {
+    "default": {"status": "running", "pid": 16400},
+    "coder": {"status": "running", "pid": 20292},
+    "growth": {"status": "running", "pid": 18056},
+    "marketing": {"status": "running", "pid": 5724},
+    "orchestrator": {"status": "running", "pid": 2176},
+    "planning": {"status": "running", "pid": 19332},
+    "researcher": {"status": "running", "pid": 8552},
+    "reviewer": {"status": "running", "pid": 18544},
+    "support": {"status": "running", "pid": 14036}
+  },
+  "agents": {
+    "project-l-research": {"profile": "researcher", "status": "idle", "gateway": "running", "last_task": "t_baf3cf65", "last_task_status": "done"},
+    "project-l-planning": {"profile": "planning", "status": "idle", "gateway": "running", "last_task": "t_ba07993a", "last_task_status": "done"},
+    "project-l-dev": {"profile": "coder", "status": "stuck", "gateway": "running", "current_task": "t_be0ad849", "task_status": "running", "run": 26, "stuck_since": "2026-06-18T18:08", "stuck_reason": "No new deliverable files created; voiceChatServer.js truncated (31KB→15KB); missing integration.test.js and Dockerfile", "stuck_phase": "stuck_initial", "previous_run": {"run": 25, "outcome": "timed_out", "reason": "Iteration budget exhausted 90/90"}},
+    "project-l-testing": {"profile": "reviewer", "status": "idle", "gateway": "running"},
+    "project-l-marketing-research": {"profile": "marketing", "status": "idle", "gateway": "running"},
+    "project-l-marketing-script": {"profile": "marketing", "status": "idle", "gateway": "running"},
+    "project-l-marketing-image": {"profile": "marketing", "status": "idle", "gateway": "running"},
+    "project-l-marketing-video": {"profile": "marketing", "status": "idle", "gateway": "running"},
+    "project-l-marketing-campaign": {"profile": "growth", "status": "idle", "gateway": "running"},
+    "project-l-marketing-qc": {"profile": "reviewer", "status": "idle", "gateway": "running"},
+    "project-l-marketing-outreach": {"profile": "support", "status": "idle", "gateway": "running"},
+    "project-l-support": {"profile": "support", "status": "idle", "gateway": "running"}
+  },
+  "active_tasks": {
+    "t_be0ad849": {
+      "title": "COMPLETE SPRINT 1 REMAINING WORK — Voice Chat + Live Room",
+      "assignee": "coder",
+      "status": "running",
+      "run": 26,
+      "started": "2026-06-18T18:08",
+      "stuck": true,
+      "stuck_phase": "stuck_initial",
+      "missing_artifacts": ["tests/integration.test.js", "Dockerfile"],
+      "regressed_artifacts": ["src/voiceChatServer.js (31KB→15KB)"],
+      "previous_failure": {"run": 25, "outcome": "timed_out", "reason": "Iteration budget 90/90 exhausted"},
+      "gate": "Supervisor review + test suite PASS"
+    }
+  },
+  "completed_tasks": {
+    "t_f2ddfffa": {"assignee": "researcher", "status": "done"},
+    "t_fa784e11": {"assignee": "researcher", "status": "done"},
+    "t_b5b8e29b": {"assignee": "researcher", "status": "done"},
+    "t_baf3cf65": {"assignee": "researcher", "status": "done"},
+    "t_ba07993a": {"assignee": "planning", "status": "done"}
+  },
+  "incidents": [
+    {
+      "id": "INC-20260618-001",
+      "type": "gateway_down",
+      "severity": "high",
+      "agents_affected": ["coder", "researcher", "planning", "reviewer", "marketing", "growth", "orchestrator", "support"],
+      "detected": "2026-06-18T18:18",
+      "remediated": "2026-06-18T18:18",
+      "action": "Started all 8 stopped gateways via hermes -p <profile> gateway start",
+      "outcome": "All 9 gateways now running"
+    },
+    {
+      "id": "INC-20260618-002",
+      "type": "task_stuck",
+      "severity": "high",
+      "agent": "project-l-dev",
+      "task": "t_be0ad849",
+      "detected": "2026-06-18T18:18",
+      "remediated": "2026-06-18T18:18",
+      "action": "Injected guidance: FOCUS ON MISSING DELIVERABLES ONLY",
+      "outcome": "guidance_injected"
+    },
+    {
+      "id": "INC-20260618-003",
+      "type": "artifact_regression",
+      "severity": "medium",
+      "agent": "project-l-dev",
+      "task": "t_be0ad849",
+      "detected": "2026-06-18T18:18",
+      "details": "voiceChatServer.js truncated from 31KB to 15KB during run 26",
+      "remediated": false,
+      "action": "Logged for escalation if not auto-fixed by next cycle"
+    }
+  ],
+  "model_config_validation": {
+    "checked": ["coder", "researcher", "planning", "marketing", "growth", "orchestrator", "reviewer", "support"],
+    "issues_found": 0,
+    "notes": "All model.default values consistent with model.provider. No provider prefix drift. All :free suffixes present."
+  }
+}
