@@ -207,19 +207,6 @@ def get_tasks():
     tasks = parse_tasks(stdout)
     return jsonify({'tasks': tasks})
 
-@app.route('/api/tasks', methods=['POST'])
-def create_task():
-    data = request.get_json()
-    title = data.get('title', '')
-    assignee = data.get('assignee', 'researcher')
-    if not title:
-        return jsonify({'error': 'Title required'}), 400
-    stdout, stderr, code = run_hermes(['kanban', 'create', title, '--assignee', assignee])
-    if code != 0:
-        return jsonify({'error': stderr}), 500
-    # Trigger immediate dispatch after task creation
-    run_kanban_dispatch()
-    return jsonify({'success': True, 'output': stdout})
 
 @app.route('/api/tasks/<task_id>')
 def get_task(task_id):
