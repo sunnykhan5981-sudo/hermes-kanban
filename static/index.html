@@ -661,18 +661,19 @@ const API_BASE = '/api';
 
 // Column Config
 const COLUMNS = [
-    { key: 'triage', title: 'Triage', icon: '📥', color: '#8e8e93' },
-    { key: 'todo', title: 'To Do', icon: '📝', color: '#0a84ff' },
-    { key: 'ready', title: 'Ready', icon: '⏳', color: '#5e5ce6' },
-    { key: 'running', title: 'Running', icon: '⚡', color: '#bf5af2' },
-    { key: 'blocked', title: 'Blocked', icon: '🚫', color: '#ff3b30' },
-    { key: 'done', title: 'Done', icon: '✅', color: '#00d4aa' },
-    { key: 'scheduled', title: 'Scheduled', icon: '📅', color: '#ff9f0a' }
+    { key: 'ideas', title: 'Ideas', icon: '💡', color: '#bf5af2', desc: 'New feature ideas' },
+    { key: 'research', title: 'Research', icon: '🔬', color: '#30b0c7', desc: 'Market scan, ads, keywords' },
+    { key: 'planning', title: 'Planning', icon: '📋', color: '#0a84ff', desc: 'PRD, tickets, sprint plan' },
+    { key: 'dev', title: 'Development', icon: '💻', color: '#5e5ce6', desc: 'TDD, code, review' },
+    { key: 'testing', title: 'Testing', icon: '🧪', color: '#ff3b30', desc: 'Test plan, execute, gate' },
+    { key: 'marketing', title: 'Marketing', icon: '📢', color: '#ff2d75', desc: 'Creative, QC, outreach' },
+    { key: 'ready', title: 'Ready', icon: '✅', color: '#00d4aa', desc: 'Launch ready' },
+    { key: 'done', title: 'Done', icon: '🏁', color: '#10b981', desc: 'Deployed/Complete' }
+];
 ];
 
 let currentTaskId = null;
 let dragSource = null;
-let isOnline = true;
 let ptrStartY = 0;
 let ptrActive = false;
 let touchStartX = 0;
