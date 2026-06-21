@@ -21,3 +21,4 @@ services:
       name: kanban-data
       mountPath: /data
       sizeGB: 1# triggered rebuild 19 Jun 2026 19:31:55
+# redeploy 21 Jun 2026 08:04:29
