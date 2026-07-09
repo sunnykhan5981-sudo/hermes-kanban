@@ -1,24 +1,26 @@
 services:
   - type: web
-    name: hermes-kanban
+    name: pl-kanban
     runtime: python
+    plan: free
     buildCommand: |
-      pip install -r requirements.txt
-      pip install hermes-agent
-    startCommand: "gunicorn server:app --bind 0.0.0.0:$PORT"
+      python -V
+      pip install --no-cache-dir -r requirements.txt
+    startCommand: "gunicorn server:app --bind 0.0.0.0:$PORT --workers=1 --timeout=60"
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
-      - key: HERMES_CMD
-        value: "hermes"
+      - key: PORT
+        value: "10000"
+      - key: KANBAN_DB_PATH
+        value: "/data/kanban.db"
       - key: HERMES_KANBAN_BOARD
-        value: "/data/hermes-kanban"
-      - key: XDG_CONFIG_HOME
-        value: "/data/hermes"
-      - key: XDG_DATA_HOME
-        value: "/data/hermes"
+        value: "/data"
     disk:
-      name: kanban-data
+      name: pl-kanban-data
       mountPath: /data
-      sizeGB: 1# triggered rebuild 19 Jun 2026 19:31:55
-# redeploy 21 Jun 2026 08:04:29
+      sizeGB: 1
+# Way 2 SQLite-backed deployment
+# - Uses direct SQLite access; never depends on `hermes` CLI at runtime.
+# - Upload a populated local DB with `render-cli assets --assetPath "C:\Users\PROJECT-1\AppData\Local\hermes\kanban\kanban.db"`.
+# - Or rely on Hermes local writes/updates during the next sync window and bootstrapped rows after first deploy.
