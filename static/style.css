@@ -218,7 +218,12 @@ select, input[type="text"]{
   text-shadow:0 0 6px rgba(255,255,255,.06)
 }
 
-/* Modal */
+/* Column header gradient strip */
+.col-strip{
+  height:3px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: .45;
+}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);padding:14px}
 .modal-backdrop.open{display:flex}
 .modal{
@@ -257,12 +262,41 @@ select, input[type="text"]{
   padding-bottom:max(env(safe-area-inset-bottom), 18px)
 }
 .drawer.open{transform:translateY(0)}
+.drawer-grip{
+  align-self:center;
+  width:36px;height:5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+  margin-bottom:14px;
+  box-shadow:0 0 8px rgba(255,255,255,.08);
+}
 .drawer h2{margin:0 0 6px;font-size:17px;text-shadow:0 0 10px rgba(255,255,255,.18)}
 .drawer .meta{color:var(--muted);font-size:12px;margin-bottom:10px}
 .kv{display:grid;grid-template-columns:90px 1fr;gap:8px 10px;font-size:13px}
 .kv b{color:var(--muted);font-weight:500}
 
 /* Toast + FAB */
+.fab{
+  position:fixed;
+  right:16px;
+  bottom:calc(18px + env(safe-area-inset-bottom));
+  width:56px;height:56px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(180deg,#0ea5e9,#2563eb);
+  border:1px solid #2563eb;
+  border-radius:999px;
+  z-index:30;
+  box-shadow:var(--shadow),0 0 18px rgba(14,165,233,.35);
+  animation: fabPulse 2.4s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+@keyframes fabPulse{
+  0%,100%{ box-shadow: var(--shadow), 0 0 18px rgba(14,165,233,.35); }
+  50%{ box-shadow: var(--shadow), 0 0 28px rgba(14,165,233,.65); }
+}
 .toast{
   position:fixed;
   left:50%;

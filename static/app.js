@@ -155,7 +155,7 @@
       const column = document.createElement("div");
       column.className = "column";
       column.dataset.status = col.key;
-      column.innerHTML = `<div class="column-head"><div>${escapeHtml(col.label)}</div>${isDoneColumn ? '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="selectAllDone" style="accent-color:#00f0ff"> Select all</label>' : ''}</div>`;
+      column.innerHTML = `<div class="column-head"><div>${escapeHtml(col.label)}</div>${isDoneColumn ? '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="selectAllDone" style="accent-color:#00f0ff"> Select all</label>' : ''}</div><div class="col-strip"></div>`;
       const list = document.createElement("div");
       list.className = "task-list";
       list.dataset.status = col.key;
