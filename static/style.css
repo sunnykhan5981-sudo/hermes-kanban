@@ -343,6 +343,170 @@ body::before{
   100%{ opacity:1; filter: hue-rotate(18deg); }
 }
 
+/* Aurora canvas */
+#auroraCanvas{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  opacity:.45;
+  pointer-events:none;
+}
+
+/* Glass cards */
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)), var(--surface);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;
+  padding:14px;
+  cursor:grab;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1.1), box-shadow .22s ease, border-color .22s ease;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,240,255,.04);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+.card:hover{
+  transform:translateY(-4px) scale(1.01);
+  border-color: rgba(0,240,255,.25);
+  box-shadow: 0 24px 48px rgba(0,0,0,.65), 0 0 0 1px rgba(0,240,255,.12), 0 0 28px rgba(0,240,255,.12);
+}
+.card.dragging{
+  opacity:.7;
+  transform:rotate(1deg) scale(1.04);
+  box-shadow:0 26px 44px rgba(0,0,0,.7), 0 0 28px rgba(0,240,255,.28);
+  cursor:grabbing;
+}
+.card.drag-over{
+  outline:2px dashed rgba(0,240,255,.4);
+  outline-offset:-2px;
+}
+
+/* Holographic sweep */
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,.22) 45%, rgba(0,240,255,.14) 50%, rgba(255,255,255,.18) 55%, transparent 70%);
+  background-size:220% 100%;
+  background-position:100% 0;
+  pointer-events:none;
+  transform:translateZ(0);
+  transition: background-position .28s ease;
+}
+.card:hover::before, .card:active::before{
+  background-position:-100% 0;
+}
+
+/* Card inner content on top of sweep */
+.card > *{ position:relative; z-index:2; }
+.card-head, .card-body, .card-foot{ position:relative; z-index:2; }
+
+/* Neon scrollbar */
+::-webkit-scrollbar{ -webkit-appearance:none; width:6px; height:6px; }
+::-webkit-scrollbar-thumb{ background: rgba(0,240,255,.18); border-radius:999px; border:1px solid rgba(0,240,255,.08); }
+::-webkit-scrollbar-thumb:hover{ background: rgba(0,240,255,.35); }
+
+/* Column status glow */
+.column{ position:relative; overflow:hidden; }
+.column::before{
+  content:"";
+  position:absolute;
+  top:-40px; left:-20px; right:-20px;
+  height:90px;
+  background: radial-gradient(ellipse at top, var(--status-color, rgba(0,240,255,.18)), transparent 70%);
+  opacity:.55;
+  pointer-events:none;
+  transition: opacity .2s ease;
+}
+.column[data-status="todo"]{ --status-color: rgba(245,158,11,.35); }
+.column[data-status="triage"]{ --status-color: rgba(255,114,182,.28); }
+.column[data-status="ready"]{ --status-color: rgba(168,85,247,.28); }
+.column[data-status="running"]{ --status-color: rgba(56,189,248,.28); }
+.column[data-status="blocked"]{ --status-color: rgba(239,68,68,.32); }
+.column[data-status="done"]{ --status-color: rgba(57,255,20,.22); }
+.column[data-status="completed"]{ --status-color: rgba(57,255,20,.22); }
+
+.column-head{ position:relative; z-index:3; background: rgba(15,23,42,.4); }
+
+/* Spring drawer */
+.drawer{
+  transition: transform .32s cubic-bezier(.32,.72,.2,1.01);
+}
+
+/* Pill badge breathing for alive statuses */
+.badge.running{ animation: breathe 2.4s ease-in-out infinite; }
+.badge.ready{ animation: breathe 3.2s ease-in-out infinite .3s; }
+@keyframes breathe{
+  0%,100%{ filter: brightness(1); }
+  50%{ filter: brightness(1.25); }
+}
+
+/* Focus glow */
+.ripple:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(0,240,255,.35);
+}
+
+/* Icon btn polish */
+.icon-btn{
+  transition: transform .1s ease, background .15s ease, box-shadow .15s ease;
+}
+.icon-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 0 14px rgba(0,240,255,.18);
+}
+.icon-btn:active{
+  transform: translateY(0) scale(.96);
+}
+
+/* Typography hierarchy */
+.topbar h1, .column-title{
+  letter-spacing:.4px;
+}
+.topbar h1{
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
+.column-title{
+  font-size:13px;
+}
+.drawer h2{
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+/* Load animations */
+.board, .column, .card{
+  animation: fadeUp .32s ease both;
+}
+@keyframes fadeUp{
+  from{ opacity:0; transform:translateY(10px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.column{ animation-delay: .06s; }
+.column:nth-child(2){ animation-delay: .12s; }
+.column:nth-child(3){ animation-delay: .18s; }
+.column:nth-child(4){ animation-delay: .24s; }
+.column:nth-child(5){ animation-delay: .3s; }
+.card{ animation-delay: .03s; }
+
+/* Priority glow */
+.badge.high, .badge.urgent, .badge.p1{
+  box-shadow:0 0 14px rgba(255,51,112,.5), inset 0 0 0 1px rgba(255,51,112,.22);
+}
+.badge.medium, .badge.normal, .badge.p2{
+  box-shadow:0 0 10px rgba(255,180,84,.22), inset 0 0 0 1px rgba(255,180,84,.1);
+}
+.card[data-priority="high"],
+.card[data-priority="urgent"]{
+  border-color: rgba(255,51,112,.45);
+  box-shadow:var(--shadow), 0 0 24px rgba(255,51,112,.2), inset 0 0 0 1px rgba(255,51,112,.1);
+}
+.card[data-priority="medium"]{
+  border-color: rgba(255,180,84,.18);
+  box-shadow:var(--shadow), 0 0 16px rgba(255,180,84,.08), inset 0 0 0 1px rgba(255,180,84,.06);
+}
+
 /* Typography hierarchy */
 .topbar h1, .column-title{
   letter-spacing:.4px;

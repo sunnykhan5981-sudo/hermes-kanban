@@ -476,4 +476,43 @@
   });
 
   renderBoard();
+  const auroraCanvas = document.getElementById('auroraCanvas');
+  if (auroraCanvas && window.requestAnimationFrame) {
+    const ctx = auroraCanvas.getContext('2d');
+    let w, h;
+    function resize(){
+      w = auroraCanvas.width = window.innerWidth;
+      h = auroraCanvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    const particles = Array.from({length: 16}, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: 90 + Math.random() * 200,
+      vx: (Math.random() - 0.5) * 0.28,
+      vy: (Math.random() - 0.5) * 0.18,
+      hue: 155 + Math.random() * 100,
+      alpha: 0.05 + Math.random() * 0.10
+    }));
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -p.r) p.x = w + p.r;
+        if (p.x > w + p.r) p.x = -p.r;
+        if (p.y < -p.r) p.y = h + p.r;
+        if (p.y > h + p.r) p.y = -p.r;
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        g.addColorStop(0, `hsla(${p.hue}, 55%, 55%, ${p.alpha})`);
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
 })();
