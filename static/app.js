@@ -14,7 +14,7 @@
     { key: "triage", label: "Ideas" },
     { key: "todo", label: "Research" },
     { key: "ready", label: "Planning" },
-    { key: "running", label: "Dev" },
+    { key: "running", label: "Developer" },
     { key: "blocked", label: "Testing" },
     { key: "done", label: "Done" },
   ];
@@ -485,7 +485,8 @@
   if (searchBox) searchBox.addEventListener("input", renderBoard);
   if (assigneeFilter) assigneeFilter.addEventListener("change", renderBoard);
   if (priorityFilter) priorityFilter.addEventListener("change", renderBoard);
-
+  setInterval(renderBoard, 10000);
+  renderBoard();
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeDrawer();

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#07090f" />
 <meta name="description" content="Hermes Multi-Agent Kanban Dashboard" />
-<title>Hermes Kanban</title>
+<title>PROJECT</title>
 <link rel="manifest" href="/manifest.json" />
 <link rel="stylesheet" href="/static/style.css?v=7" />
 </head>
@@ -16,7 +16,7 @@
 <header class="app-header">
   <div class="brand">PROJECT</div>
   <div class="header-right">
-    <span class="pill" id="statusText">Connecting...</span>
+    <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
   </div>
 </header>
 <main>
@@ -38,7 +38,6 @@
       <option value="low">Low</option>
     </select>
     <button class="btn btn-primary" id="createBtn">New Task</button>
-    <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
   </div>
   <div class="search-row">
     <input class="form-input search-full" id="searchBox" placeholder="Search tasks..." />
