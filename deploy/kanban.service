@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes Kanban Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/hermes-kanban
+Environment="HOME=/home/%i"
+Environment="XDG_CONFIG_HOME=/home/%i/.config/hermes"
+Environment="XDG_DATA_HOME=/home/%i/.local/share/hermes"
+Environment="XDG_CACHE_HOME=/home/%i/.cache/hermes"
+Environment="HERMES_KANBAN_BOARD=/home/%i/.local/share/hermes/kanban"
+ExecStart=/usr/bin/python3 server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
