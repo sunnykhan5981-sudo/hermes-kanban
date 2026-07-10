@@ -45,8 +45,8 @@ body{
   padding:12px 14px;
   padding-top:max(env(safe-area-inset-top), 12px);
   border-bottom:1px solid var(--border);
-  background:rgba(11,16,32,.65);
-  backdrop-filter: blur(10px);
+  background:rgba(11,16,32,.75);
+  backdrop-filter: blur(14px);
   position:sticky;
   top:0;
   z-index:20;
@@ -274,6 +274,91 @@ select, input[type="text"]{
 .drawer .meta{color:var(--muted);font-size:12px;margin-bottom:10px}
 .kv{display:grid;grid-template-columns:90px 1fr;gap:8px 10px;font-size:13px}
 .kv b{color:var(--muted);font-weight:500}
+
+/* Load animations */
+.board, .column, .card{
+  animation: fadeUp .28s ease both;
+}
+@keyframes fadeUp{
+  from{ opacity:0; transform:translateY(8px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.column{ animation-delay: .08s; }
+.column:nth-child(2){ animation-delay: .14s; }
+.column:nth-child(3){ animation-delay: .2s; }
+.card{ animation-delay: .04s; }
+
+/* Priority glow */
+.badge.high, .badge.urgent, .badge.p1{
+  box-shadow:0 0 12px rgba(255,51,112,.45), inset 0 0 0 1px rgba(255,51,112,.18);
+}
+.card[data-priority="high"],
+.card[data-priority="urgent"]{
+  border-color:#5c2032;
+  box-shadow:var(--shadow), 0 0 18px rgba(255,51,112,.18), inset 0 0 0 1px rgba(255,51,112,.08);
+}
+
+/* Ripple */
+.ripple{ position:relative; overflow:hidden; }
+.ripple::after{
+  content:"";
+  position:absolute;
+  left:50%;top:50%;
+  width:0;height:0;
+  background:rgba(255,255,255,.35);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  transition:transform .5s ease, opacity .5s ease;
+  opacity:0;
+}
+.ripple:active::after{
+  width:220%;height:220%;
+  transform:translate(-50%,-50%) scale(1);
+  opacity:0;
+  transition:transform 0s, opacity 0s;
+}
+
+/* Drag lift */
+.card.dragging{
+  opacity:.45;
+  transform:rotate(1deg) scale(1.02);
+  box-shadow:0 22px 40px rgba(0,0,0,.65), 0 0 22px rgba(0,240,255,.22);
+}
+
+/* Animated subtle background */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:
+    radial-gradient(1200px 800px at -10% -10%,#0a1a3a,transparent 55%),
+    radial-gradient(900px 600px at 110% 110%,#180d2e,transparent 55%),
+    radial-gradient(600px 600px at 50% 0%, rgba(0,240,255,.06), transparent 40%);
+  animation: bgPulse 8s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes bgPulse{
+  0%{ opacity:.8; filter: hue-rotate(0deg); }
+  100%{ opacity:1; filter: hue-rotate(18deg); }
+}
+
+/* Typography hierarchy */
+.topbar h1, .column-title{
+  letter-spacing:.4px;
+}
+.topbar h1{
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
+.column-title{
+  font-size:13px;
+}
+.drawer h2{
+  font-weight:700;
+  letter-spacing:.2px;
+}
 
 /* Toast + FAB */
 .fab{

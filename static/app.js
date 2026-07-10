@@ -213,9 +213,10 @@
             const rawStatus = String(task.status || '').toLowerCase();
             const isCardDone = rawStatus === 'done' || rawStatus === 'completed' || rawStatus === 'complete';
             const card = document.createElement("div");
-            card.className = "card";
+            card.className = "card ripple";
             card.draggable = true;
             card.dataset.id = task.id;
+            card.dataset.priority = task.priority || "medium";
             card.innerHTML = `
               <div class="card-head">
                 <span class="badge ${statusClass(task.status)}">${escapeHtml(task.id)}</span>
