@@ -36,6 +36,84 @@ KANBAN_BOARD = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban"
 DB_PATH = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban.db"
 DEFAULT_DB_PATH = DB_PATH
 
+# Auto-init DB tables on import — required for Render / gunicorn,
+# because `if __name__ == '__main__'` does NOT run when deployed.
+try:
+    os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+    _auto_init_con = sqlite3.connect(DB_PATH)
+    _auto_init_con.row_factory = sqlite3.Row
+    _auto_init_cur = _auto_init_con.cursor()
+    _auto_init_cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tasks (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            body TEXT DEFAULT '',
+            assignee TEXT DEFAULT 'default',
+            status TEXT DEFAULT 'ready',
+            priority INTEGER DEFAULT 0,
+            created_by TEXT DEFAULT 'user',
+            created_at INTEGER,
+            started_at INTEGER,
+            completed_at INTEGER,
+            workspace_kind TEXT DEFAULT 'scratch',
+            workspace_path TEXT,
+            branch_name TEXT,
+            tenant TEXT,
+            result TEXT,
+            consecutive_failures INTEGER DEFAULT 0,
+            last_failure_error TEXT,
+            block_kind TEXT,
+            block_recurrences INTEGER DEFAULT 0,
+            current_step_key TEXT,
+            updated_at INTEGER
+        )
+        """
+    )
+    _auto_init_cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS task_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id TEXT NOT NULL,
+            profile TEXT DEFAULT 'default',
+            step_key TEXT,
+            status TEXT DEFAULT 'ready',
+            started_at INTEGER,
+            ended_at INTEGER,
+            outcome TEXT,
+            summary TEXT,
+            error TEXT,
+            created_at INTEGER DEFAULT (strftime('%s','now'))
+        )
+        """
+    )
+    _auto_init_cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS task_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id TEXT NOT NULL,
+            author TEXT DEFAULT 'system',
+            body TEXT DEFAULT '',
+            created_at INTEGER DEFAULT (strftime('%s','now'))
+        )
+        """
+    )
+    _auto_init_cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS task_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id TEXT NOT NULL,
+            kind TEXT DEFAULT 'generic',
+            payload TEXT DEFAULT '{}',
+            created_at INTEGER DEFAULT (strftime('%s','now'))
+        )
+        """
+    )
+    _auto_init_con.commit()
+    _auto_init_con.close()
+except Exception as _e:
+    print(f"[DB_INIT] init failed: {_e}")
+
 # Background dispatcher control
 dispatcher_thread = None
 dispatcher_running = False
@@ -471,82 +549,4 @@ if __name__ == '__main__':
     print(f"Starting Kanban Dashboard on http://0.0.0.0:{port}")
     print(f"DB: {DB_PATH}")
     print("Press Ctrl+C to stop")
-    _init_db()
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
-
-
-def _init_db():
-    try:
-        os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
-        con = _db()
-        cur = con.cursor()
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS tasks (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                body TEXT DEFAULT '',
-                assignee TEXT DEFAULT 'default',
-                status TEXT DEFAULT 'ready',
-                priority INTEGER DEFAULT 0,
-                created_by TEXT DEFAULT 'user',
-                created_at INTEGER,
-                started_at INTEGER,
-                completed_at INTEGER,
-                workspace_kind TEXT DEFAULT 'scratch',
-                workspace_path TEXT,
-                branch_name TEXT,
-                tenant TEXT,
-                result TEXT,
-                consecutive_failures INTEGER DEFAULT 0,
-                last_failure_error TEXT,
-                block_kind TEXT,
-                block_recurrences INTEGER DEFAULT 0,
-                current_step_key TEXT,
-                updated_at INTEGER
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS task_runs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT NOT NULL,
-                profile TEXT DEFAULT 'default',
-                step_key TEXT,
-                status TEXT DEFAULT 'ready',
-                started_at INTEGER,
-                ended_at INTEGER,
-                outcome TEXT,
-                summary TEXT,
-                error TEXT,
-                created_at INTEGER DEFAULT (strftime('%s','now'))
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS task_comments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT NOT NULL,
-                author TEXT DEFAULT 'system',
-                body TEXT DEFAULT '',
-                created_at INTEGER DEFAULT (strftime('%s','now'))
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS task_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT NOT NULL,
-                kind TEXT DEFAULT 'generic',
-                payload TEXT DEFAULT '{}',
-                created_at INTEGER DEFAULT (strftime('%s','now'))
-            )
-            """
-        )
-        con.commit()
-        con.close()
-    except Exception as e:
-        print(f"[DB_INIT] init failed: {e}")
