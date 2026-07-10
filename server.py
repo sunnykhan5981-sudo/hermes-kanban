@@ -31,10 +31,16 @@ def add_csp_headers(response):
 
 STATIC_FOLDER = os.path.join(os.path.dirname(__file__), 'static')
 
-# Board/path config: always reuse the existing local Hermes board data
-KANBAN_BOARD = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban"
-DB_PATH = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban.db"
-DEFAULT_DB_PATH = DB_PATH
+# Board/path config: default to local Hermes data on Windows, but honor env on Linux/VPS
+if os.name == "nt":
+  DEFAULT_DB_PATH = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban.db"
+  DEFAULT_KANBAN_BOARD = r"C:\Users\PROJECT-1\AppData\Local\hermes\kanban"
+else:
+  DEFAULT_DB_PATH = os.path.join(os.path.expanduser("~"), ".local", "share", "hermes", "kanban.db")
+  DEFAULT_KANBAN_BOARD = os.path.join(os.path.expanduser("~"), ".local", "share", "hermes", "kanban")
+
+DB_PATH = os.environ.get("KANBAN_DB_PATH", DEFAULT_DB_PATH)
+KANBAN_BOARD = os.environ.get("HERMES_KANBAN_BOARD", DEFAULT_KANBAN_BOARD)
 
 # Auto-init DB tables on import — required for Render / gunicorn,
 # because `if __name__ == '__main__'` does NOT run when deployed.
