@@ -33,6 +33,10 @@
   const createModal = $("#createModal");
   const drawer = $("#drawer");
   const drawerBackdrop = $("#drawerBackdrop");
+  const detailsPanel = $("#detailsPanel");
+  const detTitle = $("#detTitle");
+  const detBody = $("#detBody");
+  const detClose = $("#detClose");
   const dTitle = $("#dTitle");
   const dMeta = $("#dMeta");
   const dBody = $("#dBody");
@@ -286,20 +290,47 @@
     const description = card ? card.description || "" : "";
     const rawStatus = String(status || "").toLowerCase();
     const isDone = ["done","completed","complete"].includes(rawStatus) || !!card?.completed;
+    if (isDone) {
+      openDetails(id);
+      return;
+    }
     if (dTitle) dTitle.textContent = title;
     if (dMeta) dMeta.textContent = `${id} · ${escapeHtml(status || "")} · ${escapeHtml(assignee)}`;
     if (dBody) {
-      let resultHtml = "";
-      if (isDone || rawStatus === "blocked") {
-        resultHtml += `<div><b>Execution Result</b><span id="dResult">Loading...</span></div>`;
-      }
       dBody.innerHTML = `
         <div><b>Title</b><span>${escapeHtml(title)}</span></div>
         <div><b>Status</b><span>${escapeHtml(status)}</span></div>
         <div><b>Assignee</b><span>${escapeHtml(assignee)}</span></div>
         <div><b>Priority</b><span>${escapeHtml(priority)}</span></div>
         <div><b>Description</b><span>${escapeHtml(description)}</span></div>
-        ${resultHtml}
+      `;
+    }
+    safeToggle(drawer, true);
+    safeToggle(drawerBackdrop, true);
+  }
+
+  function openDetails(id) {
+    const card = (window.__kanbanTasks || []).find(t => t.id === id);
+    const title = card ? card.title : `Task ${id}`;
+    if (detTitle) detTitle.textContent = `Details · ${title}`;
+    if (detBody) {
+      const status = card ? card.status : "";
+      const assignee = card ? card.assignee : "unassigned";
+      const priority = card ? card.priority : "medium";
+      const description = card ? card.description || "" : "";
+      const rawStatus = String(status || "").toLowerCase();
+      const isDone = ["done","completed","complete"].includes(rawStatus) || !!card?.completed;
+      let resultBlock = "";
+      if (isDone || rawStatus === "blocked") {
+        resultBlock += `<div class="det-section"><b>Execution Result</b><span id="dResult">Loading...</span></div>`;
+      }
+      detBody.innerHTML = `
+        <div class="det-section"><b>Title</b><span>${escapeHtml(title)}</span></div>
+        <div class="det-section"><b>Status</b><span>${escapeHtml(status)}</span></div>
+        <div class="det-section"><b>Assignee</b><span>${escapeHtml(assignee)}</span></div>
+        <div class="det-section"><b>Priority</b><span>${escapeHtml(priority)}</span></div>
+        <div class="det-section"><b>Description</b><span>${escapeHtml(description)}</span></div>
+        ${resultBlock}
       `;
       if (isDone || rawStatus === "blocked") {
         api("GET", `/api/tasks/${id}/runs`).then((rPayload) => {
@@ -329,14 +360,19 @@
         });
       }
     }
-    safeToggle(drawer, true);
-    safeToggle(drawerBackdrop, true);
+    if (detailsPanel) detailsPanel.classList.add("open");
+  }
+
+  function closeDetails() {
+    if (detailsPanel) detailsPanel.classList.remove("open");
+    currentDetailId = null;
   }
 
   function closeDrawer() {
     safeToggle(drawer, false);
     safeToggle(drawerBackdrop, false);
     currentDetailId = null;
+    if (detailsPanel) detailsPanel.classList.remove("open");
   }
 
   async function moveTask(id, status) {
@@ -381,24 +417,25 @@
     setTimeout(() => toastEl.classList.remove("show"), 1800);
   }
 
-  if (createBtn) {
-    createBtn.addEventListener("click", () => {
-      console.log("[Kanban] Create clicked");
-      safeToggle(createModal, true);
-    });
-  }
+  function openCreateModal(){ if (createModal) createModal.classList.add("open"); }
+  function closeCreateModal(){ if (createModal) createModal.classList.remove("open"); }
+  if (createBtn) createBtn.addEventListener("click", openCreateModal);
+  const fabBtn = $("#fab");
+  if (fabBtn) fabBtn.addEventListener("click", openCreateModal);
 
   const cancelCreate = $("#cancelCreate");
   const submitCreate = $("#submitCreate");
-  if (cancelCreate) cancelCreate.addEventListener("click", () => safeToggle(createModal, false));
+  if (cancelCreate) cancelCreate.addEventListener("click", closeCreateModal);
   if (submitCreate) submitCreate.addEventListener("click", createTask);
-  if (createModal) createModal.addEventListener("click", (event) => { if (event.target === createModal) safeToggle(createModal, false); });
+  if (createModal) createModal.addEventListener("click", (event) => { if (event.target === createModal) closeCreateModal(); });
 
   const dComplete = $("#dComplete");
   const dDelete = $("#dDelete");
   const dClose = $("#dClose");
   const bulkDeleteBtn = $("#bulkDeleteBtn");
   if (dClose) dClose.addEventListener("click", closeDrawer);
+  if (detClose) detClose.addEventListener("click", closeDetails);
+  if (detailsPanel) detailsPanel.addEventListener("click", (e) => { if (e.target === detailsPanel) closeDetails(); });
   if (drawerBackdrop) drawerBackdrop.addEventListener("click", closeDrawer);
   if (dComplete) {
     dComplete.addEventListener("click", () => {
@@ -452,6 +489,7 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeDrawer();
+      closeDetails();
       safeToggle(createModal, false);
     }
   });

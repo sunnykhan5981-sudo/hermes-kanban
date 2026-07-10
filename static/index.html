@@ -14,18 +14,15 @@
 <body>
 <canvas id="auroraCanvas" aria-hidden="true"></canvas>
 <header class="app-header">
-  <div class="brand">📋 Hermes Kanban</div>
+  <div class="brand">PROJECT</div>
   <div class="header-right">
     <span class="pill" id="statusText">Connecting...</span>
-    <span class="pill" id="statsText"></span>
-    <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
   </div>
 </header>
 <main>
   <div class="toolbar">
-    <input class="form-input" id="searchBox" placeholder="Search tasks..." />
     <select class="form-select" id="assigneeFilter">
-      <option value="">All assignees</option>
+      <option value="">All Assignees</option>
       <option value="default">Orchestrator</option>
       <option value="researcher">Researcher</option>
       <option value="coder">Developer</option>
@@ -35,12 +32,16 @@
       <option value="support">Support</option>
     </select>
     <select class="form-select" id="priorityFilter">
-      <option value="">All priorities</option>
+      <option value="">All Priorities</option>
       <option value="high">High</option>
       <option value="medium">Medium</option>
       <option value="low">Low</option>
     </select>
     <button class="btn btn-primary" id="createBtn">New Task</button>
+    <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
+  </div>
+  <div class="search-row">
+    <input class="form-input search-full" id="searchBox" placeholder="Search tasks..." />
   </div>
   <div class="board" id="board"></div>
 </main>
@@ -98,7 +99,14 @@
     <button class="btn btn-danger" id="dDelete">Archive</button>
   </div>
 </div>
+<div class="details-panel" id="detailsPanel">
+  <div class="details-header">
+    <div class="details-title" id="detTitle">Task</div>
+    <button class="modal-close icon-btn" id="detClose" type="button">✕</button>
+  </div>
+  <div class="details-body" id="detBody"></div>
+</div>
 <div class="toast" id="toast"></div>
-<script src="/static/app.js?v=7"></script>
+<script src="/static/app.js?v=8"></script>
 </body>
 </html>
