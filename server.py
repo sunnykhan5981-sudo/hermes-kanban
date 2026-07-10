@@ -332,7 +332,7 @@ def get_tasks():
             """
         )
         rows = cur.fetchall()
-        return jsonify({"tasks": [_row_to_task(r) for r in rows]})
+        return jsonify(tasks_to_board_payload(rows))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
