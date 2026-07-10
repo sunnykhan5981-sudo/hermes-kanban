@@ -1,0 +1,10 @@
+Task t_x:
+  status: done
+Latest summary:
+Completed via dashboard
+Events:
+  [x] created {}
+  [y] claimed {}
+Runs:
+  #1 completed researcher 1s 2026-07-03
+    -> Completed via dashboard

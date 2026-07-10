@@ -10,17 +10,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
-      - key: PORT
-        value: "10000"
       - key: KANBAN_DB_PATH
-        value: "/data/kanban.db"
+        value: "/tmp/kanban.db"
       - key: HERMES_KANBAN_BOARD
-        value: "/data"
-    disk:
-      name: pl-kanban-data
-      mountPath: /data
-      sizeGB: 1
-# Way 2 SQLite-backed deployment
-# - Uses direct SQLite access; never depends on `hermes` CLI at runtime.
-# - Upload a populated local DB with `render-cli assets --assetPath "C:\Users\PROJECT-1\AppData\Local\hermes\kanban\kanban.db"`.
-# - Or rely on Hermes local writes/updates during the next sync window and bootstrapped rows after first deploy.
+        value: "/tmp"
+      - key: DISABLE_HERMES_CLI
+        value: "1"
+# Render free tier does NOT support persistent disks.
+# DB is therefore ephemeral at /tmp/kanban.db and resets on each deploy/spindown.
+# If you need persistence, upgrade to Starter and add a disk mount at /data.
