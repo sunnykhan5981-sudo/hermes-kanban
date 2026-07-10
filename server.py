@@ -160,6 +160,7 @@ def _row_to_task(r):
         "branch_name": r["branch_name"],
         "tenant": r["tenant"],
         "result": r["result"],
+        "description": r["body"] or "",
         "consecutive_failures": r["consecutive_failures"] or 0,
         "last_failure_error": r["last_failure_error"],
         "block_kind": r["block_kind"],
@@ -332,7 +333,8 @@ def get_tasks():
             """
         )
         rows = cur.fetchall()
-        return jsonify(tasks_to_board_payload(rows))
+        # Frontend (app.js renderBoard) expects a flat `tasks` array.
+        return jsonify({"tasks": [_row_to_task(r) for r in rows]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -413,10 +415,10 @@ def complete_task(task_id):
         cur.execute(
             """
             UPDATE tasks
-            SET status = 'done', completed_at = ?, result = ?, updated_at = ?
+            SET status = 'done', completed_at = ?, result = ?
             WHERE id = ?
             """,
-            (ts, summary, ts, task_id),
+            (ts, summary, task_id),
         )
         con.commit()
         cur.execute(
@@ -444,10 +446,10 @@ def move_task(task_id):
         cur.execute(
             """
             UPDATE tasks
-            SET status = ?, started_at = ?, updated_at = ?
+            SET status = ?, started_at = ?
             WHERE id = ?
             """,
-            (hermes_status, ts, ts, task_id),
+            (hermes_status, ts, task_id),
         )
         con.commit()
         return jsonify({"success": True, "new_status": new_status})
@@ -460,7 +462,7 @@ def delete_task(task_id):
     try:
         con = _db()
         cur = con.cursor()
-        cur.execute("UPDATE tasks SET status = 'archived', updated_at = ? WHERE id = ?", (_now_ts(), task_id))
+        cur.execute("UPDATE tasks SET status = 'archived' WHERE id = ?", (task_id,))
         con.commit()
         return jsonify({"success": True})
     except Exception as e:

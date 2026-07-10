@@ -1,0 +1,119 @@
+{
+  "base_url": "http://localhost:9292",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "passed": 20,
+  "failed": 0,
+  "total": 20,
+  "results": [
+    {
+      "test": "page_load",
+      "pass": true,
+      "detail": "loaded http://localhost:9292 @ 390x844"
+    },
+    {
+      "test": "viewport_meta",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "test": "no_horizontal_overflow",
+      "pass": true,
+      "detail": "scrollW=390 clientW=390"
+    },
+    {
+      "test": "board_renders_columns",
+      "pass": true,
+      "detail": "6 columns, 5 cards"
+    },
+    {
+      "test": "board_renders_cards",
+      "pass": true,
+      "detail": "5 cards shown"
+    },
+    {
+      "test": "fab_visible",
+      "pass": true,
+      "detail": "size={'x': 318, 'y': 770, 'width': 56, 'height': 56}"
+    },
+    {
+      "test": "fab_in_viewport",
+      "pass": true,
+      "detail": "box x within 0..390"
+    },
+    {
+      "test": "fab_opens_modal",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "test": "modal_fits_mobile",
+      "pass": true,
+      "detail": "modal box={'x': 0, 'y': 326.78125, 'width': 390, 'height': 517.21875}"
+    },
+    {
+      "test": "card_opens_drawer",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "test": "drawer_fits_mobile",
+      "pass": true,
+      "detail": "drawer box={'x': 0, 'y': 844, 'width': 390, 'height': 291}"
+    },
+    {
+      "test": "drawer_has_complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "test": "tap_target_create_btn",
+      "pass": true,
+      "detail": "ok=True"
+    },
+    {
+      "test": "tap_target_refresh_btn",
+      "pass": true,
+      "detail": "ok=True"
+    },
+    {
+      "test": "tap_target_assignee_filter",
+      "pass": true,
+      "detail": "ok=True"
+    },
+    {
+      "test": "tap_target_priority_filter",
+      "pass": true,
+      "detail": "ok=True"
+    },
+    {
+      "test": "swipe_move_functional",
+      "pass": true,
+      "detail": "throwaway ready -> running on swipe LEFT"
+    },
+    {
+      "test": "swipe_move",
+      "pass": true,
+      "detail": "synthetic touch swipe executed without error"
+    },
+    {
+      "test": "pwa_manifest",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "test": "no_console_errors",
+      "pass": true,
+      "detail": "0 errors: []"
+    }
+  ],
+  "console_errors": [],
+  "screenshots": [
+    "01_board.png",
+    "02_create_modal.png",
+    "03_drawer.png",
+    "04_drawer_actions.png"
+  ]
+}

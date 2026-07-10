@@ -224,15 +224,19 @@ select, input[type="text"]{
   background: linear-gradient(90deg, var(--accent), transparent 70%);
   opacity: .45;
 }
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);padding:14px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);padding:0}
 .modal-backdrop.open{display:flex}
 .modal{
   background:linear-gradient(180deg,#0f172a,#0b1220);
   border:1px solid var(--border);
-  border-radius:20px;
+  border-radius:20px 20px 0 0;
   padding:18px;
+  padding-bottom:max(env(safe-area-inset-bottom), 18px);
   width:100%;
   max-width:440px;
+  max-height:90vh;
+  overflow-y:auto;
+  box-sizing:border-box;
   box-shadow:var(--shadow),0 0 22px rgba(0,240,255,.08);
   animation:slideUp .2s ease
 }
@@ -448,6 +452,17 @@ body::before{
 
 /* Icon btn polish */
 .icon-btn{
+  min-width:44px;
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:50%;
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
   transition: transform .1s ease, background .15s ease, box-shadow .15s ease;
 }
 .icon-btn:hover{

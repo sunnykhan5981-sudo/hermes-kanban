@@ -402,6 +402,7 @@
       const cDesc = $("#cDesc");
       if (cDesc) cDesc.value = "";
       toast("Task created");
+      renderBoard();
     } catch (error) {
       console.error("[Kanban] Create failed", error);
       toast("Create failed");
